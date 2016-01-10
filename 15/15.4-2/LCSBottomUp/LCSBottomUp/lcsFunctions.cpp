@@ -35,7 +35,7 @@ vector<vector<int>>* initValsMatrixBottomUp(const string& a, const string& b)
     return vals;
 }
 
-string fincLCSUpToBottom(const string & a, const string & b)
+string findLCSUpToBottom(const string & a, const string & b)
 {
     auto vals = initValsMatrixUpToBottom(a, b);
     auto result = reconstructSolution(*vals, a, b);
@@ -94,4 +94,36 @@ string reconstructSolution(const vector<vector<int>>& vals, const string& a, con
     reverse(result.begin(), result.end());
     return result;
 
+}
+
+int memoryOptimizedLcsLength(const string& a, const string& b)
+{
+    if (a.size() < b.size())
+        return memoryOptimizedLcsLength(b, a);
+
+    vector<int> valsBuffer(b.size(), 0);
+
+    for (auto i = 0; i < a.size(); i++)
+    {
+        auto prevRowValueDiagonal = 0;
+        auto prevRowValueTop = 0;
+
+        for (auto j = 0; j < b.size(); j++)
+        {
+            prevRowValueDiagonal = prevRowValueTop;
+            prevRowValueTop = valsBuffer[j];
+            if (a[i] == b[j])
+            {
+                valsBuffer[j] = 1 + prevRowValueDiagonal;
+            }
+            else
+            {
+                auto fullAShortenedBVal = j == 0 ? 0 : valsBuffer[j - 1];
+                auto fullBShortenedAVal = prevRowValueTop;
+                valsBuffer[j] = max(fullAShortenedBVal, fullBShortenedAVal);
+            }
+        }
+    }
+
+    return valsBuffer.at(b.size() - 1);
 }
