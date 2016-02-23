@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BTree
 {
-    class BTree<TKey, TData>
+    internal sealed class BTree<TKey, TData>
         where TKey : IComparable<TKey>
     {
         public Node<TKey, TData> Root { get; private set; }
@@ -20,7 +20,7 @@ namespace BTree
             if (IsFull(Root))
             {
                 var newRoot = new Node<TKey, TData>(false);
-                newRoot.Children.Add(Root);
+                newRoot.AppendChild(Root);
                 SplitChild(newRoot, 0);
                 Root = newRoot;
             }
@@ -35,27 +35,24 @@ namespace BTree
             var firstChild = parent.Children[childIdx];
             var secondChild = new Node<TKey, TData>(firstChild.IsLeaf);
             
-            parent.InsertData(firstChild.GetData(_branchingFactor - 1), secondChild);
+            parent.InsertChild(firstChild.GetData(_branchingFactor - 1), secondChild);
             for (var i = _branchingFactor; i < firstChild.Size; i++)
                 secondChild.AppendData(firstChild.GetData(i));
             if (!firstChild.IsLeaf)
             {
                 for (var i = _branchingFactor; i <= firstChild.Size; i++)
-                    secondChild.Children.Add(firstChild.Children[i]);
+                    secondChild.AppendChild(firstChild.Children[i]);
             }
             firstChild.RemoveDataRange(_branchingFactor - 1, _branchingFactor);
         }
 
         private void InsertNonFull(Node<TKey, TData> node, KeyValuePair<TKey, TData> item)
         {
-            var insertionIdx = 0;
-            while (insertionIdx < node.Size && item.Key.CompareTo(node.Keys[insertionIdx]) == 1)
-                insertionIdx++;
-
             if (node.IsLeaf)
-                node.InsertData(item, insertionIdx);
+                node.InsertData(item);
             else
             {
+                var insertionIdx = node.FindProperPos(item.Key);
                 if (IsFull(node.Children[insertionIdx]))
                 {
                     SplitChild(node, insertionIdx);

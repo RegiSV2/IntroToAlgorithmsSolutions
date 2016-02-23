@@ -39,7 +39,6 @@ namespace BTree
                     .Child(Leaf().Key("V"))
                     .Key("W")
                     .Child(Leaf().Key("X").Key("Y").Key("Z")));
-
             AssertEqual(tree.Root, expectedTree);
         }
 

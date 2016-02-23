@@ -9,7 +9,7 @@ namespace BTree
         public static Node<TKey, TData> Child<TKey, TData>(this Node<TKey, TData> node, Node<TKey, TData> child)
             where TKey : IComparable<TKey>
         {
-            node.Children.Add(child);
+            node.AppendChild(child);
             return node;
         }  
 
