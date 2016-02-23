@@ -31,6 +31,29 @@ namespace BTree
 
         public int Size => _keys.Count;
 
+        public KeyValuePair<TKey, TData> GetData(int index)
+        {
+            if (index >= _keys.Count)
+                throw new ArgumentException();
+
+            return new KeyValuePair<TKey, TData>(_keys[index], _data[index]);
+        }
+
+        public int FindProperPos(TKey key)
+        {
+            var lower = 0;
+            var upper = Keys.Count - 1;
+            while (upper >= lower)
+            {
+                var median = (upper - lower) / 2 + lower;
+                if (key.CompareTo(_keys[median]) == 1)
+                    lower = median + 1;
+                else
+                    upper = median - 1;
+            }
+            return lower;
+        }
+
         public void AppendData(KeyValuePair<TKey, TData> data)
         {
             _keys.Add(data.Key);
@@ -41,15 +64,7 @@ namespace BTree
         {
             _children.Add(child);
         }
-
-        public KeyValuePair<TKey, TData> GetData(int index)
-        {
-            if(index >= _keys.Count)
-                throw new ArgumentException();
-
-            return new KeyValuePair<TKey, TData>(_keys[index], _data[index]);
-        }
-
+        
         public void RemoveDataRange(int start, int count)
         {
             _keys.RemoveRange(start, count);
@@ -76,21 +91,6 @@ namespace BTree
                 _data.Insert(insertionIdx, newData.Value);
                 _children.Insert(insertionIdx + 1, newChild);
             }
-        }
-
-        public int FindProperPos(TKey key)
-        {
-            var lower = 0;
-            var upper = Keys.Count - 1;
-            while (upper >= lower)
-            {
-                var median = (upper - lower)/2 + lower;
-                if (key.CompareTo(_keys[median]) == 1)
-                    lower = median + 1;
-                else
-                    upper = median - 1;
-            }
-            return lower;
         }
     }
 }

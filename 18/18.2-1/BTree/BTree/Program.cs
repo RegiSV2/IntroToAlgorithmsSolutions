@@ -10,10 +10,11 @@ namespace BTree
     {
         static void Main(string[] args)
         {
-            TestCase1();
+            InsertionTestCase1();
+            SearchTestCase1();
         }
 
-        static void TestCase1()
+        static void InsertionTestCase1()
         {
             var keys = "F;S;Q;K;C;L;H;T;V;W;M;R;N;P;A;B;X;Y;D;Z;E".Split(';');
             var tree = new BTree<string, string>(2);
@@ -40,6 +41,33 @@ namespace BTree
                     .Key("W")
                     .Child(Leaf().Key("X").Key("Y").Key("Z")));
             AssertEqual(tree.Root, expectedTree);
+        }
+
+        static void SearchTestCase1()
+        {
+            var keys = "F;S;Q;K;C;L;H;T;V;W;M;R;N;P;A;B;X;Y;D;Z;E".Split(';');
+            var tree = new BTree<string, string>(2);
+            foreach (var key in keys)
+                tree.Insert(new KeyValuePair<string, string>(key, key));
+            
+            AssertFound(tree.Search("K"), "K");
+            AssertFound(tree.Search("X"), "X");
+            AssertFound(tree.Search("L"), "L");
+            AssertNotFound(tree.Search("I"));
+            AssertNotFound(tree.Search("0"));
+        }
+
+        static void AssertFound<TData>(SearchResult<TData> result, TData expected)
+            where TData : IComparable<TData>
+        {
+            if(!result.IsFound || result.Data.CompareTo(expected) != 0)
+                throw new InvalidOperationException("Invalid search result");
+        }
+
+        static void AssertNotFound<TData>(SearchResult<TData> result)
+        {
+            if(result.IsFound)
+                throw new InvalidOperationException("Invalid search result");
         }
 
         static void AssertEqual<TKey, TData>(Node<TKey, TData> node1, Node<TKey, TData> node2)

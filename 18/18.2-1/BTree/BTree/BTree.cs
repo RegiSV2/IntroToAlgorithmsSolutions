@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BTree;
 
 namespace BTree
 {
@@ -13,6 +14,21 @@ namespace BTree
         {
             _branchingFactor = branchingFactor;
             Root = new Node<TKey, TData>(true);
+        }
+
+        public SearchResult<TData> Search(TKey key)
+        {
+            return InternalSearch(Root, key);
+        }
+
+        private SearchResult<TData> InternalSearch(Node<TKey, TData> node, TKey key)
+        {
+            var idx = node.FindProperPos(key);
+            if (idx < node.Keys.Count && node.Keys[idx].CompareTo(key) == 0)
+                return SearchResult<TData>.CreateFound(node.GetData(idx).Value);
+            if(!node.IsLeaf)
+                return InternalSearch(node.Children[idx], key);
+            return SearchResult<TData>.CreateNotFound();
         }
 
         public void Insert(KeyValuePair<TKey, TData> item)
