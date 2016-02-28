@@ -7,15 +7,27 @@ namespace BTree
     /// <summary>
     /// Base class for B-Tree nodes
     /// </summary>
-    internal sealed class Node<TKey, TData>
+    [Serializable]
+    internal class Node<TKey, TData>
         where TKey : IComparable<TKey>
     {
-        private readonly List<Node<TKey, TData>> _children;
-        private readonly List<TKey> _keys;
-        private readonly List<TData> _data;
-        public bool IsLeaf { get; }
+        private List<Guid> _children;
+        private List<TKey> _keys;
+        private List<TData> _data;
+        public bool IsLeaf { get; private set; }
         public IReadOnlyList<TKey> Keys { get; }
-        public IReadOnlyList<Node<TKey, TData>> Children { get; }
+        public IReadOnlyList<Guid> Children { get; }
+        public Guid Id { get; private set; }
+        public bool IsLoaded { get; private set; }
+
+        private Node()
+        { } 
+
+        public Node(Guid id)
+        {
+            Id = id;
+            IsLoaded = false;
+        } 
 
         public Node(bool isLeaf)
         {
@@ -23,10 +35,12 @@ namespace BTree
             _keys = new List<TKey>();
             Keys = new ReadOnlyCollection<TKey>(_keys);
             IsLeaf = isLeaf;
+            Id = Guid.NewGuid();
+            IsLoaded = true;
 
             if (isLeaf) return;
-            _children = new List<Node<TKey, TData>>();
-            Children = new ReadOnlyCollection<Node<TKey, TData>>(_children);
+            _children = new List<Guid>();
+            Children = new ReadOnlyCollection<Guid>(_children);
         }
 
         public int Size => _keys.Count;
@@ -60,7 +74,7 @@ namespace BTree
             _data.Add(data.Value);
         }
 
-        public void AppendChild(Node<TKey, TData> child)
+        public void AppendChild(Guid child)
         {
             _children.Add(child);
         }
@@ -80,7 +94,7 @@ namespace BTree
             _data.Insert(insertionIdx, data.Value);
         }
 
-        public void InsertChild(KeyValuePair<TKey, TData> newData, Node<TKey, TData> newChild)
+        public void InsertChild(KeyValuePair<TKey, TData> newData, Guid newChild)
         {
             var insertionIdx = FindProperPos(newData.Key);
             if (_keys.Count > insertionIdx && newData.Key.CompareTo(_keys[insertionIdx]) == 0)
