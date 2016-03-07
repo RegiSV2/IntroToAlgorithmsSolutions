@@ -9,6 +9,8 @@ namespace BTree
 
         void SaveRoot(Node<TKey, TData> root);
 
+        void Remove(Guid nodeId);
+
         Node<TKey, TData> Load(Guid nodeId);
     }
 }

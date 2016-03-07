@@ -20,6 +20,11 @@ namespace BTree
             Save(root);
         }
 
+        public void Remove(Guid nodeId)
+        {
+            _nodesPool.Remove(nodeId);
+        }
+
         public Node<TKey, TData> Load(Guid nodeId)
         {
             return _nodesPool[nodeId];

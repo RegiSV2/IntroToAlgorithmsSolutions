@@ -50,8 +50,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchResult.cs" />
-    <Compile Include="StringNodeExtensions.cs" />
+    <Compile Include="StringTreeBuilder.cs" />
     <Compile Include="StubPersister.cs" />
+    <Compile Include="TreeBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -24,7 +24,7 @@ namespace BTree
 
         public void Save(Node<TKey, TData> node)
         {
-            var fileName = GetNodeFileName(node.Id);
+            var fileName = NodeFileName(node.Id);
             using (var stream = File.Open(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
                 _nodeFormatter.Serialize(stream, node);
         }
@@ -37,14 +37,20 @@ namespace BTree
             Save(root);
         }
 
+        public void Remove(Guid nodeId)
+        {
+            if(File.Exists(NodeFileName(nodeId)))
+                File.Delete(NodeFileName(nodeId));
+        }
+
         public Node<TKey, TData> Load(Guid nodeId)
         {
-            var fileName = GetNodeFileName(nodeId);
+            var fileName = NodeFileName(nodeId);
             using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.None))
                 return (Node<TKey, TData>)_nodeFormatter.Deserialize(stream);
         }
 
-        private string GetNodeFileName(Guid nodeId)
+        private string NodeFileName(Guid nodeId)
         {
             return Path.Combine(_folder, nodeId.ToString());
         }
