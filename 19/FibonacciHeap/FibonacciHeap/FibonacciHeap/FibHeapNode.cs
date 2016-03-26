@@ -13,9 +13,9 @@ namespace FibonacciHeap
 
         public LinkedList<FibHeapNode<TData>> Children { get; }
 
-        public bool IsMarked { get; set; }
+        public bool IsMarked { get; internal set; }
 
-        public TData Data { get; } 
+        public TData Data { get; internal set; } 
 
         public FibHeapNode<TData> Parent { get; internal set; }   
     }

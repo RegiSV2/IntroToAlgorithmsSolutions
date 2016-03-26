@@ -7,16 +7,34 @@ namespace FibonacciHeap
     internal class FibonacciHeap<TData>
     {
         private readonly TData _minDataValue;
-        private readonly LinkedList<FibHeapNode<TData>> _roots = new LinkedList<FibHeapNode<TData>>();
+        private readonly LinkedList<FibHeapNode<TData>> _roots;
         private LinkedListNode<FibHeapNode<TData>> _minNode;
-        private IComparer<TData> _comparer;
+        private readonly IComparer<TData> _comparer;
         private int _size;
 
         public FibonacciHeap(TData minDataValue, IComparer<TData> comparer)
+            : this(minDataValue, comparer, Enumerable.Empty<FibHeapNode<TData>>())
+        {
+        }
+
+        public FibonacciHeap(TData minDataValue, IComparer<TData> comparer, IEnumerable<FibHeapNode<TData>> roots)
         {
             _minDataValue = minDataValue;
             _comparer = comparer;
-        }
+            _roots = new LinkedList<FibHeapNode<TData>>(roots);
+            if (_roots.Any())
+            {
+                var node = _roots.First;
+                while (node != null)
+                {
+                    if (_minNode == null || _comparer.Compare(node.Value.Data, _minNode.Value.Data) == -1)
+                        _minNode = node;
+                    node = node.Next;
+                }
+            }
+        } 
+
+        public IEnumerable<FibHeapNode<TData>> Roots => _roots;
 
         public void Insert(TData data)
         {
@@ -119,6 +137,44 @@ namespace FibonacciHeap
             node.Children.AddLast(nodeToLink);
             nodeToLink.Parent = node;
             nodeToLink.IsMarked = false;
+        }
+
+        public void DecreaseKey(FibHeapNode<TData> node, TData newKey)
+        {
+            if (_comparer.Compare(newKey, node.Data) == 1)
+                throw new InvalidOperationException("New key is greater than current key");
+
+            node.Data = newKey;
+            var parent = node.Parent;
+            if (parent != null && _comparer.Compare(node.Data, parent.Data) == -1)
+            {
+                Cut(node);
+                CascadeCut(parent);
+            }
+        }
+
+        private void Cut(FibHeapNode<TData> node)
+        {
+            var parent = node.Parent;
+            parent.Children.Remove(node);
+            node.Parent = null;
+            node.IsMarked = false;
+            _roots.AddLast(node);
+        }
+
+        private void CascadeCut(FibHeapNode<TData> node)
+        {
+            var parent = node.Parent;
+            if (parent == null)
+                return;
+
+            if (!node.IsMarked)
+                node.IsMarked = true;
+            else
+            {
+                Cut(node);
+                CascadeCut(parent);
+            }
         }
     }
 }
