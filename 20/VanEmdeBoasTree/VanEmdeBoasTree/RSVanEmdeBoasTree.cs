@@ -1,43 +1,40 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Xml.Schema;
+using System.Linq;
 
 namespace VanEmdeBoasTree
 {
-    public class VanEmdeBoasTree<TData> : IVanEmdeBoasTree<TData>
+    public class RsVanEmdeBoasTree<TData> : IVanEmdeBoasTree<TData>
     {
         public uint Universe { get; }
         public uint? Min { get; protected set; }
         public TData MinData { get; protected set; }
         public uint? Max { get; protected set; }
         public TData MaxData { get; protected set; }
-        public IVanEmdeBoasTree<TData> Summary { get; }
-        private readonly VanEmdeBoasTree<TData>[] _clusters;
+        public IVanEmdeBoasTree<TData> Summary { get; private set; }
+        private readonly Dictionary<int, RsVanEmdeBoasTree<TData>> _clusters;
         private readonly uint _lowerSqrt;
 
-        public VanEmdeBoasTree(uint universe)
+        public RsVanEmdeBoasTree(uint universe)
         {
             if (universe <= 0)
                 Universe = 2;
-            else Universe = (uint) Math.Pow(2, Math.Max(1, Math.Ceiling(Math.Log(universe, 2))));
+            else Universe = (uint)Math.Pow(2, Math.Max(1, Math.Ceiling(Math.Log(universe, 2))));
 
             if (universe > 2)
             {
-                var upperSqrt = (uint)Math.Pow(2, Math.Ceiling(Math.Log(Universe, 2) / 2));
-                Summary = new VanEmdeBoasTree<TData>(upperSqrt);
                 _lowerSqrt = (uint)Math.Pow(2, Math.Floor(Math.Log(Universe, 2) / 2));
-                _clusters = new VanEmdeBoasTree<TData>[upperSqrt];
-                for (var i = 0; i < upperSqrt; i++)
-                    _clusters[i] = new VanEmdeBoasTree<TData>(_lowerSqrt);
+                _clusters = new Dictionary<int, RsVanEmdeBoasTree<TData>>();
             }
         }
 
-        public IEnumerable<IVanEmdeBoasTree<TData>> Clusters => _clusters;
+        public IEnumerable<IVanEmdeBoasTree<TData>> Clusters
+            => _clusters?.Values ?? Enumerable.Empty<IVanEmdeBoasTree<TData>>();
 
         public void Insert(uint value, TData data)
         {
-            if(value >= Universe)
+            if (value >= Universe)
                 throw new ArgumentOutOfRangeException();
             DoInsert(value, data);
         }
@@ -65,14 +62,14 @@ namespace VanEmdeBoasTree
                 if (Universe > 2)
                 {
                     var clusterIdx = High(value);
-                    var cluster = _clusters[clusterIdx];
+                    var cluster = GetOrCreateCluster(clusterIdx);
                     if (cluster.Min.HasValue)
                     {
                         cluster.DoInsert(Low(value), data);
                     }
                     else
                     {
-                        Summary.Insert(clusterIdx, data);
+                        GetOrCreateSummary().Insert(clusterIdx, data);
                         cluster.Min = Low(value);
                         cluster.MinData = data;
                         cluster.Max = Low(value);
@@ -93,7 +90,8 @@ namespace VanEmdeBoasTree
                 return true;
             if (Universe <= 2)
                 return false;
-            return _clusters[High(value)].Contains(Low(value));
+            var cluster = GetCluster(High(value));
+            return cluster?.Contains(Low(value)) ?? false;
         }
 
         public uint? GetSuccessor(uint value)
@@ -106,8 +104,8 @@ namespace VanEmdeBoasTree
             }
             if (Min.HasValue && Min > value)
                 return Min;
-            var cluster = _clusters[High(value)];
-            if (cluster.Max.HasValue && cluster.Max > Low(value))
+            var cluster = GetCluster(High(value));
+            if (cluster?.Max != null && cluster.Max > Low(value))
             {
                 var lowSuccessor = cluster.GetSuccessor(Low(value));
                 Debug.Assert(lowSuccessor.HasValue);
@@ -115,11 +113,11 @@ namespace VanEmdeBoasTree
             }
             else
             {
-                var nextClusterIdx = Summary.GetSuccessor(High(value));
+                var nextClusterIdx = Summary?.GetSuccessor(High(value));
                 if (!nextClusterIdx.HasValue)
                     return null;
-                var nextCluster = _clusters[nextClusterIdx.Value];
-                Debug.Assert(nextCluster.Min.HasValue);
+                var nextCluster = GetCluster(nextClusterIdx.Value);
+                Debug.Assert(nextCluster?.Min != null);
                 return Index(nextClusterIdx.Value, nextCluster.Min.Value);
             }
         }
@@ -134,8 +132,8 @@ namespace VanEmdeBoasTree
             }
             if (Max.HasValue && Max < value)
                 return Max;
-            var cluster = _clusters[High(value)];
-            if (cluster.Min.HasValue && cluster.Min < Low(value))
+            var cluster = GetCluster(High(value));
+            if (cluster?.Min != null && cluster.Min < Low(value))
             {
                 var lowPredecessor = cluster.GetPredecessor(Low(value));
                 Debug.Assert(lowPredecessor.HasValue);
@@ -143,15 +141,15 @@ namespace VanEmdeBoasTree
             }
             else
             {
-                var prevClusterIdx = Summary.GetPredecessor(High(value));
+                var prevClusterIdx = Summary?.GetPredecessor(High(value));
                 if (!prevClusterIdx.HasValue)
                 {
                     if (Min.HasValue && Min < value)
                         return Min;
                     return null;
                 }
-                var prevCluster = _clusters[prevClusterIdx.Value];
-                Debug.Assert(prevCluster.Max.HasValue);
+                var prevCluster = GetCluster(prevClusterIdx.Value);
+                Debug.Assert(prevCluster?.Max != null);
                 return Index(prevClusterIdx.Value, prevCluster.Max.Value);
             }
         }
@@ -164,6 +162,7 @@ namespace VanEmdeBoasTree
                 Max = null;
                 MinData = default(TData);
                 MaxData = default(TData);
+                Summary = null;
             }
             else if (Universe == 2)
             {
@@ -183,52 +182,84 @@ namespace VanEmdeBoasTree
             {
                 if (value == Min)
                 {
-                    var minClusterIdx = Summary.Min;
+                    var minClusterIdx = Summary?.Min;
                     Debug.Assert(minClusterIdx.HasValue);
-                    var minClusterMin = _clusters[minClusterIdx.Value].Min;
+                    var clusterWithMin = GetCluster(minClusterIdx.Value);
+                    Debug.Assert(clusterWithMin != null);
+                    var minClusterMin = clusterWithMin.Min;
                     Debug.Assert(minClusterMin.HasValue);
                     Min = Index(minClusterIdx.Value, minClusterMin.Value);
-                    MinData = _clusters[minClusterIdx.Value].MinData;
+                    MinData = clusterWithMin.MinData;
                     value = Min.Value;
                 }
-                _clusters[High(value)].Delete(Low(value));
-                if (!_clusters[High(value)].Min.HasValue)
+                var clusterToDeleteFrom = GetCluster(High(value));
+                if (clusterToDeleteFrom != null)
                 {
-                    Summary.Delete(High(value));
-                    if (value == Max)
+                    clusterToDeleteFrom.Delete(Low(value));
+
+                    if (clusterToDeleteFrom.Min == null)
                     {
-                        var maxClusterIdx = Summary.Max;
-                        if (maxClusterIdx.HasValue)
+                        _clusters.Remove((int)High(value));
+                        Summary?.Delete(High(value));
+                        if (value == Max)
                         {
-                            var maxCluster = _clusters[maxClusterIdx.Value];
-                            Debug.Assert(maxCluster.Max.HasValue);
-                            Max = Index(maxClusterIdx.Value, maxCluster.Max.Value);
-                            MaxData = maxCluster.MaxData;
-                        }
-                        else
-                        {
-                            Max = Min;
+                            var maxClusterIdx = Summary?.Max;
+                            if (maxClusterIdx.HasValue)
+                            {
+                                var maxCluster = GetCluster(maxClusterIdx.Value);
+                                Debug.Assert(maxCluster.Max.HasValue);
+                                Max = Index(maxClusterIdx.Value, maxCluster.Max.Value);
+                                MaxData = maxCluster.MaxData;
+                            }
+                            else
+                            {
+                                Max = Min;
+                            }
                         }
                     }
-                }
-                else if (value == Max)
-                {
-                    var newMax = _clusters[High(value)].Max;
-                    Debug.Assert(newMax.HasValue);
-                    Max = Index(High(value), newMax.Value);
-                    MaxData = _clusters[High(value)].MaxData;
+                    else if (value == Max)
+                    {
+                        var newMax = clusterToDeleteFrom.Max;
+                        Debug.Assert(newMax.HasValue);
+                        Max = Index(High(value), newMax.Value);
+                        MaxData = clusterToDeleteFrom.MaxData;
+                    }
                 }
             }
         }
 
+        private RsVanEmdeBoasTree<TData> GetCluster(uint clusterIdx)
+        {
+            if (!_clusters.ContainsKey((int) clusterIdx))
+                return null;
+            return _clusters[(int) clusterIdx];
+        }
+
+        private RsVanEmdeBoasTree<TData> GetOrCreateCluster(uint clusterIdx)
+        {
+            if (!_clusters.ContainsKey((int)clusterIdx))
+                _clusters[(int)clusterIdx] = new RsVanEmdeBoasTree<TData>(_lowerSqrt);
+            return _clusters[(int)clusterIdx];
+        }
+
+        private IVanEmdeBoasTree<TData> GetOrCreateSummary()
+        {
+            if (Summary == null)
+            {
+                var upperSqrt = (uint)Math.Pow(2, Math.Ceiling(Math.Log(Universe, 2) / 2));
+                Summary = new RsVanEmdeBoasTree<TData>(upperSqrt);
+            }
+            return Summary;
+        }
+
         private uint Index(uint high, uint low)
         {
-            return high*_lowerSqrt + low;
+            return high * _lowerSqrt + low;
         }
 
         private uint High(uint value)
         {
-            return value/ _lowerSqrt;
+            return value / _lowerSqrt;
         }
 
         private uint Low(uint value)
