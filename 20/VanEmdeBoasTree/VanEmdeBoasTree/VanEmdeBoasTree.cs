@@ -1,32 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Xml.Schema;
 
 namespace VanEmdeBoasTree
 {
     public class VanEmdeBoasTree<TData> : IVanEmdeBoasTree<TData>
     {
-        public uint Universe { get; }
-        public uint? Min { get; protected set; }
+        public int Universe { get; }
+        public int? Min { get; protected set; }
         public TData MinData { get; protected set; }
-        public uint? Max { get; protected set; }
+        public int? Max { get; protected set; }
         public TData MaxData { get; protected set; }
         public IVanEmdeBoasTree<TData> Summary { get; }
         private readonly VanEmdeBoasTree<TData>[] _clusters;
-        private readonly uint _lowerSqrt;
+        private readonly int _lowerSqrt;
 
-        public VanEmdeBoasTree(uint universe)
+        public VanEmdeBoasTree(int universe)
         {
             if (universe <= 0)
                 Universe = 2;
-            else Universe = (uint) Math.Pow(2, Math.Max(1, Math.Ceiling(Math.Log(universe, 2))));
+            else Universe = (int) Math.Pow(2, Math.Max(1, Math.Ceiling(Math.Log(universe, 2))));
 
             if (universe > 2)
             {
-                var upperSqrt = (uint)Math.Pow(2, Math.Ceiling(Math.Log(Universe, 2) / 2));
+                var upperSqrt = (int)Math.Pow(2, Math.Ceiling(Math.Log(Universe, 2) / 2));
                 Summary = new VanEmdeBoasTree<TData>(upperSqrt);
-                _lowerSqrt = (uint)Math.Pow(2, Math.Floor(Math.Log(Universe, 2) / 2));
+                _lowerSqrt = (int)Math.Pow(2, Math.Floor(Math.Log(Universe, 2) / 2));
                 _clusters = new VanEmdeBoasTree<TData>[upperSqrt];
                 for (var i = 0; i < upperSqrt; i++)
                     _clusters[i] = new VanEmdeBoasTree<TData>(_lowerSqrt);
@@ -35,14 +34,14 @@ namespace VanEmdeBoasTree
 
         public IEnumerable<IVanEmdeBoasTree<TData>> Clusters => _clusters;
 
-        public void Insert(uint value, TData data)
+        public void Insert(int key, TData data)
         {
-            if(value >= Universe)
+            if(key >= Universe)
                 throw new ArgumentOutOfRangeException();
-            DoInsert(value, data);
+            DoInsert(key, data);
         }
 
-        private void DoInsert(uint value, TData data)
+        private void DoInsert(int value, TData data)
         {
             if (!Min.HasValue)
             {
@@ -87,7 +86,7 @@ namespace VanEmdeBoasTree
             }
         }
 
-        public bool Contains(uint value)
+        public bool Contains(int value)
         {
             if (value == Min || value == Max)
                 return true;
@@ -96,26 +95,26 @@ namespace VanEmdeBoasTree
             return _clusters[High(value)].Contains(Low(value));
         }
 
-        public uint? GetSuccessor(uint value)
+        public int? GetSuccessor(int key)
         {
             if (Universe == 2)
             {
-                if (Max.HasValue && Max > value)
+                if (Max.HasValue && Max > key)
                     return Max.Value;
                 return null;
             }
-            if (Min.HasValue && Min > value)
+            if (Min.HasValue && Min > key)
                 return Min;
-            var cluster = _clusters[High(value)];
-            if (cluster.Max.HasValue && cluster.Max > Low(value))
+            var cluster = _clusters[High(key)];
+            if (cluster.Max.HasValue && cluster.Max > Low(key))
             {
-                var lowSuccessor = cluster.GetSuccessor(Low(value));
+                var lowSuccessor = cluster.GetSuccessor(Low(key));
                 Debug.Assert(lowSuccessor.HasValue);
-                return Index(High(value), lowSuccessor.Value);
+                return Index(High(key), lowSuccessor.Value);
             }
             else
             {
-                var nextClusterIdx = Summary.GetSuccessor(High(value));
+                var nextClusterIdx = Summary.GetSuccessor(High(key));
                 if (!nextClusterIdx.HasValue)
                     return null;
                 var nextCluster = _clusters[nextClusterIdx.Value];
@@ -124,29 +123,29 @@ namespace VanEmdeBoasTree
             }
         }
 
-        public uint? GetPredecessor(uint value)
+        public int? GetPredecessor(int key)
         {
             if (Universe == 2)
             {
-                if (Min.HasValue && Min < value)
+                if (Min.HasValue && Min < key)
                     return Min.Value;
                 return null;
             }
-            if (Max.HasValue && Max < value)
+            if (Max.HasValue && Max < key)
                 return Max;
-            var cluster = _clusters[High(value)];
-            if (cluster.Min.HasValue && cluster.Min < Low(value))
+            var cluster = _clusters[High(key)];
+            if (cluster.Min.HasValue && cluster.Min < Low(key))
             {
-                var lowPredecessor = cluster.GetPredecessor(Low(value));
+                var lowPredecessor = cluster.GetPredecessor(Low(key));
                 Debug.Assert(lowPredecessor.HasValue);
-                return Index(High(value), lowPredecessor.Value);
+                return Index(High(key), lowPredecessor.Value);
             }
             else
             {
-                var prevClusterIdx = Summary.GetPredecessor(High(value));
+                var prevClusterIdx = Summary.GetPredecessor(High(key));
                 if (!prevClusterIdx.HasValue)
                 {
-                    if (Min.HasValue && Min < value)
+                    if (Min.HasValue && Min < key)
                         return Min;
                     return null;
                 }
@@ -156,7 +155,7 @@ namespace VanEmdeBoasTree
             }
         }
 
-        public void Delete(uint value)
+        public void Delete(int key)
         {
             if (Min == Max)
             {
@@ -167,8 +166,8 @@ namespace VanEmdeBoasTree
             }
             else if (Universe == 2)
             {
-                Debug.Assert(value == 0 || value == 1);
-                if (value == 0)
+                Debug.Assert(key == 0 || key == 1);
+                if (key == 0)
                 {
                     Min = 1;
                     MinData = MaxData;
@@ -181,7 +180,7 @@ namespace VanEmdeBoasTree
             }
             else
             {
-                if (value == Min)
+                if (key == Min)
                 {
                     var minClusterIdx = Summary.Min;
                     Debug.Assert(minClusterIdx.HasValue);
@@ -189,13 +188,13 @@ namespace VanEmdeBoasTree
                     Debug.Assert(minClusterMin.HasValue);
                     Min = Index(minClusterIdx.Value, minClusterMin.Value);
                     MinData = _clusters[minClusterIdx.Value].MinData;
-                    value = Min.Value;
+                    key = Min.Value;
                 }
-                _clusters[High(value)].Delete(Low(value));
-                if (!_clusters[High(value)].Min.HasValue)
+                _clusters[High(key)].Delete(Low(key));
+                if (!_clusters[High(key)].Min.HasValue)
                 {
-                    Summary.Delete(High(value));
-                    if (value == Max)
+                    Summary.Delete(High(key));
+                    if (key == Max)
                     {
                         var maxClusterIdx = Summary.Max;
                         if (maxClusterIdx.HasValue)
@@ -211,27 +210,27 @@ namespace VanEmdeBoasTree
                         }
                     }
                 }
-                else if (value == Max)
+                else if (key == Max)
                 {
-                    var newMax = _clusters[High(value)].Max;
+                    var newMax = _clusters[High(key)].Max;
                     Debug.Assert(newMax.HasValue);
-                    Max = Index(High(value), newMax.Value);
-                    MaxData = _clusters[High(value)].MaxData;
+                    Max = Index(High(key), newMax.Value);
+                    MaxData = _clusters[High(key)].MaxData;
                 }
             }
         }
 
-        private uint Index(uint high, uint low)
+        private int Index(int high, int low)
         {
             return high*_lowerSqrt + low;
         }
 
-        private uint High(uint value)
+        private int High(int value)
         {
             return value/ _lowerSqrt;
         }
 
-        private uint Low(uint value)
+        private int Low(int value)
         {
             return value % _lowerSqrt;
         }

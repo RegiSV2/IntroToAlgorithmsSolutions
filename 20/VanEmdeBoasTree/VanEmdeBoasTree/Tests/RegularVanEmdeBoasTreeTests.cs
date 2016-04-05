@@ -3,10 +3,11 @@ using System.Linq;
 
 namespace VanEmdeBoasTree.Tests
 {
-    class RegularVanEmdeBoasTreeTests : VanEmdeBoasTreeTests
+    class RegularVanEmdeBoasTreeTests : BoundedSetTests
     {
-        protected override void AssertIsValidEmptyTree(IVanEmdeBoasTree<object> tree, uint expectedUniverse)
+        protected override void AssertIsValidEmptySet(IBoundedSet<object> set, int expectedUniverse)
         {
+            var tree = (VanEmdeBoasTree<object>)set;
             Assert(tree.Universe == expectedUniverse);
             Assert(!tree.Min.HasValue);
             Assert(!tree.Max.HasValue);
@@ -17,15 +18,15 @@ namespace VanEmdeBoasTree.Tests
             }
             else
             {
-                AssertIsValidEmptyTree(tree.Summary, (uint)Math.Pow(2, Math.Ceiling(Math.Log(expectedUniverse, 2) / 2)));
+                AssertIsValidEmptySet(tree.Summary, (int)Math.Pow(2, Math.Ceiling(Math.Log(expectedUniverse, 2) / 2)));
                 Assert(tree.Clusters.All(x => x != null));
-                var lowSqrt = (uint)Math.Pow(2, Math.Floor(Math.Log(expectedUniverse, 2) / 2));
+                var lowSqrt = (int)Math.Pow(2, Math.Floor(Math.Log(expectedUniverse, 2) / 2));
                 foreach (var cluster in tree.Clusters)
-                    AssertIsValidEmptyTree(cluster, lowSqrt);
+                    AssertIsValidEmptySet(cluster, lowSqrt);
             }
         }
 
-        protected override IVanEmdeBoasTree<object> CreateTree(uint universe)
+        protected override IBoundedSet<object> CreateSet(int universe)
         {
             return new VanEmdeBoasTree<object>(universe);
         }

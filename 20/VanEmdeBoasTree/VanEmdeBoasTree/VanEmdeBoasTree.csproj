@@ -43,14 +43,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IBoundedSet.cs" />
     <Compile Include="IVanEmdeBoasTree.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtoYFastTree.cs" />
+    <Compile Include="Tests\ProtoYFastTreeTests.cs" />
     <Compile Include="Tests\RegularVanEmdeBoasTreeTests.cs" />
     <Compile Include="RSVanEmdeBoasTree.cs" />
     <Compile Include="Tests\RsVanEmdeBoasTreeTests.cs" />
+    <Compile Include="Tests\YFastPerfectHashTableTests.cs" />
     <Compile Include="VanEmdeBoasTree.cs" />
-    <Compile Include="Tests\VanEmdeBoasTreeTests.cs" />
+    <Compile Include="Tests\BoundedSetTests.cs" />
+    <Compile Include="YFastNode.cs" />
+    <Compile Include="YFastPerfectHashTable.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

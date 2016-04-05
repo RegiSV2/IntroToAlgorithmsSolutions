@@ -1,12 +1,12 @@
-using System;
 using System.Linq;
 
 namespace VanEmdeBoasTree.Tests
 {
-    class RsVanEmdeBoasTreeTests : VanEmdeBoasTreeTests
+    class RsVanEmdeBoasTreeTests : BoundedSetTests
     {
-        protected override void AssertIsValidEmptyTree(IVanEmdeBoasTree<object> tree, uint expectedUniverse)
+        protected override void AssertIsValidEmptySet(IBoundedSet<object> set, int expectedUniverse)
         {
+            var tree = (RsVanEmdeBoasTree<object>) set;
             Assert(tree.Universe == expectedUniverse);
             Assert(!tree.Min.HasValue);
             Assert(!tree.Max.HasValue);
@@ -14,7 +14,7 @@ namespace VanEmdeBoasTree.Tests
             Assert(!tree.Clusters.Any());
         }
 
-        protected override IVanEmdeBoasTree<object> CreateTree(uint universe)
+        protected override IBoundedSet<object> CreateSet(int universe)
         {
             return new RsVanEmdeBoasTree<object>(universe);
         }

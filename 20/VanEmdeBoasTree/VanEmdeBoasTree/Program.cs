@@ -6,8 +6,10 @@ namespace VanEmdeBoasTree
     {
         static void Main(string[] args)
         {
-            new RegularVanEmdeBoasTreeTests().RunAllTests();
-            new RsVanEmdeBoasTreeTests().RunAllTests();
+            //new RegularVanEmdeBoasTreeTests().RunAllTests();
+            //new RsVanEmdeBoasTreeTests().RunAllTests();
+            //YFastPerfectHashTableTests.RunAllTests();
+            new ProtoYFastTreeTests().RunAllTests();
         }
     }
 }
